@@ -1,6 +1,6 @@
 // 오프라인 동작용 서비스 워커
 // 앱 파일을 수정해서 다시 올릴 때는 아래 버전 숫자를 하나 올려 주세요.
-const CACHE = 'bible-app-v2';
+const CACHE = 'bible-app-v3';
 const FILES = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

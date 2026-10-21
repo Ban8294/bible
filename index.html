@@ -166,6 +166,32 @@ main{max-width:720px;margin:0 auto;padding:14px 16px 24px}
 .modal.top .acts{position:sticky;bottom:0;background:var(--surface);padding:12px 0 18px;margin-top:14px}
 .btn{white-space:nowrap}
 body.has-sel .toast{bottom:calc(140px + env(safe-area-inset-bottom))}
+
+/* v1.2 번역본·대역·듣기 */
+#topRight{display:flex;gap:2px;align-items:center}
+.verbar{display:flex;gap:8px;align-items:center;margin:0 0 6px}
+.verbar .seg{flex:1;max-width:260px}
+.reader.en{word-break:normal}
+.reader .alt{display:block;font-family:var(--sans);font-size:.8em;line-height:1.55;color:var(--muted);margin:.25em 0 .45em;word-break:normal}
+.reader .alt:lang(ko){word-break:keep-all}
+.reader p.speaking{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+.ttsbar{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));z-index:41;display:flex;justify-content:center;padding:8px 12px;pointer-events:none}
+.ttsbar .inner{pointer-events:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;gap:2px;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:460px;width:100%;align-items:center}
+.ttsbar button{border:0;background:transparent;color:var(--text);padding:9px 9px;border-radius:10px;font-weight:700;font-size:15px;min-width:38px;white-space:nowrap}
+.ttsbar button.pri{background:var(--accent);color:var(--accent-ink);min-width:46px}
+.ttsbar .info{flex:1;font-size:13px;font-weight:600;color:var(--muted);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.has-tts{padding-bottom:calc(126px + env(safe-area-inset-bottom))}
+body.has-tts .selbar{bottom:calc(122px + env(safe-area-inset-bottom))}
+body.has-tts .toast{bottom:calc(140px + env(safe-area-inset-bottom))}
+body.has-tts.has-sel .toast{bottom:calc(200px + env(safe-area-inset-bottom))}
+.cmp-head{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px}
+.cmp{max-height:55vh;overflow:auto}
+.cmp-row{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.cmp-row:first-child{border-top:0}
+.cmp-n{font-size:12px;font-weight:800;color:var(--accent);width:20px;flex:none;padding-top:3px}
+.cmp-ko{font-family:var(--serif);font-size:16px;line-height:1.65;word-break:keep-all}
+.cmp-en{font-size:14.5px;line-height:1.55;color:var(--muted);margin-top:4px}
+select.inp{appearance:auto;-webkit-appearance:menulist;padding:8px 10px;font-size:15px;max-width:190px}
 .read-actions{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;margin:22px 0 6px}
 .read-actions .btn{padding:14px 8px}
 .mark-btn.on{background:var(--soft);color:var(--accent);border-color:var(--accent)}
@@ -230,13 +256,23 @@ input[type=range]{width:150px;accent-color:var(--accent)}
 <div class="selbar hidden" id="selbar"><div class="inner">
   <span class="ref" id="selRef"></span>
   <button data-act="selcopy">복사</button>
+  <button data-act="selcmp" id="selCmp">한/영</button>
   <button class="pri" data-act="selsave" id="selSave">★ 즐겨찾기</button>
   <button data-act="selclear" aria-label="선택 해제">✕</button>
+</div></div>
+<div class="ttsbar hidden" id="ttsbar"><div class="inner">
+  <button data-act="ttsprev" aria-label="이전 절">⏮</button>
+  <button class="pri" id="ttsPlay" data-act="ttsplay" aria-label="재생">▶</button>
+  <button data-act="ttsnext" aria-label="다음 절">⏭</button>
+  <span class="info" id="ttsInfo"></span>
+  <button data-act="ttsrate" id="ttsRate">1x</button>
+  <button data-act="ttssleep" id="ttsSleep" aria-label="취침 타이머">⏱</button>
+  <button data-act="ttsclose" aria-label="듣기 닫기">✕</button>
 </div></div>
 
 <script>
 'use strict';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 /* ───────── 성경 66권 기본 정보 [이름, 약어, 장수] ───────── */
 const BOOKS = [
@@ -260,10 +296,20 @@ const TOTAL = BOOKS.reduce((s,b)=>s+b[2],0);                       // 1189
 const OT_TOTAL = BOOKS.slice(0,OT_COUNT).reduce((s,b)=>s+b[2],0);   // 929
 const NT_TOTAL = TOTAL - OT_TOTAL;                                   // 260
 const PSALMS = 18;
+const EN_BOOKS = ["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Songs","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi","Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"];
 const norm = s => String(s).replace(/\s+/g,'');
+const normL = s => norm(s).toLowerCase();
 const NAME_IDX = new Map();
-BOOKS.forEach((b,i)=>{ NAME_IDX.set(norm(b[0]),i); NAME_IDX.set(norm(b[1]),i); });
+BOOKS.forEach((b,i)=>{ NAME_IDX.set(norm(b[0]),i); NAME_IDX.set(norm(b[1]),i); NAME_IDX.set(normL(EN_BOOKS[i]),i); });
+[['psalm',18],['songofsolomon',21],['canticles',21],['revelations',65],['아가서',21],['예레미야애가서',24]].forEach(([n,i])=>NAME_IDX.set(n,i));
+const findBook = s => NAME_IDX.get(normL(s));
 const K = (b,c) => `${b}:${c}`;
+/* 번역본: ko(기본 한글), en(영어) — 저장 키 앞에 붙는 구분자 */
+const VERS = ['ko','en'];
+const LANG = {ko:'ko-KR', en:'en-US'};
+const PFX = {ko:'', en:'en|'};
+const TK = (ver,b,c) => PFX[ver]+K(b,c);
+const otherVer = v => v==='ko' ? 'en' : 'ko';
 const unit = b => b===PSALMS ? '편' : '장';
 const chName = (b,c) => `${BOOKS[b][0]} ${c}${unit(b)}`;
 
@@ -290,7 +336,9 @@ const DB = {
 
 /* ───────── 상태 ───────── */
 let P, LOG, S, LAST, META, BM, CATS, HAVE = new Set();
-const DEFAULT_S = {font:19, lh:1.85, face:'serif', theme:'auto', auto:false};
+const DEFAULT_S = {font:19, lh:1.85, face:'serif', theme:'auto', auto:false,
+  ver:'ko', par:false,
+  ttsRate:1, ttsBoth:false, ttsNext:true, ttsMark:true, ttsFollow:true, voice_ko:'', voice_en:''};
 const DEFAULT_CATS = ['위로','감사','기도','믿음','소망','사랑','두려울 때','지칠 때','결단할 때'];
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 async function loadState(){
@@ -359,18 +407,34 @@ function decode(buf){
   try{ return new TextDecoder('utf-8',{fatal:true}).decode(u).replace(/^\uFEFF/,''); }
   catch(e){ try{ return new TextDecoder('euc-kr').decode(u); }catch(e2){ return new TextDecoder().decode(u); } }
 }
+/* 지원 형식
+   ① #창세기 1장 / ##소제목 / 1. 본문      (한글·영어 모두: #Genesis 1)
+   ② 첫 줄 책 이름(Genesis) + "1:1 본문" 형식 (책별 파일)                     */
 function parseBible(text, fname=''){
   const fm = fname.match(/(?:^|[_\s-])(\d{1,2})[_\s.-]/);
   const fb = fm && +fm[1]>=1 && +fm[1]<=66 ? +fm[1]-1 : -1;
-  const out=[]; let cur=null;
+  const langOf = s => /[가-힣]/.test(s) ? 'ko' : 'en';
+  const out=[]; let cur=null, pb=-1, pl=null;
+  const open = (b,c,lang) => { cur={b,c,lang,h:[],v:[]}; out.push(cur); };
   for(const raw of text.split(/\r?\n/)){
     const line=raw.trim(); if(!line) continue;
     if(line.startsWith('##')){ if(cur) cur.h.push([cur.v.length, line.replace(/^#+\s*/,'')]); continue; }
     if(line.startsWith('#')){
       const m=line.slice(1).trim().match(/^(.*?)\s*(\d+)\s*(?:장|편)?\s*$/);
       cur=null;
-      if(m){ let b=NAME_IDX.get(norm(m[1])); if(b===undefined) b=fb;
-        if(b>=0){ cur={b, c:+m[2], h:[], v:[]}; out.push(cur); } }
+      if(m){ let b=findBook(m[1]); if(b===undefined) b=fb;
+        if(b>=0) open(b, +m[2], langOf(m[1])); }
+      continue;
+    }
+    // 형식 ②: 책 이름만 있는 줄
+    const bk = /^\d+[:.]/.test(line) ? undefined : findBook(line);
+    if(bk!==undefined){ pb=bk; pl=langOf(line); cur=null; continue; }
+    const cv = line.match(/^(\d+):(\d+)\s*(.*)$/);
+    if(cv){
+      const b = pb>=0 ? pb : fb; if(b<0) continue;
+      const c=+cv[1], t=cv[3].replace(/\s+/g,' ').trim();
+      if(!cur || cur.b!==b || cur.c!==c) open(b, c, pl || langOf(t));
+      if(t) cur.v.push([+cv[2], t]);            // 번호만 있는 절(생략 절)은 건너뜀
       continue;
     }
     if(!cur) continue;
@@ -381,20 +445,25 @@ function parseBible(text, fname=''){
   return out.filter(ch=>ch.c>=1 && ch.c<=BOOKS[ch.b][2] && ch.v.length);
 }
 async function importFiles(files){
-  const entries=[], perBook={}, unknown=[];
+  const entries=[], per={ko:{}, en:{}}, unknown=[];
   for(const f of files){
     const chs=parseBible(decode(await f.arrayBuffer()), f.name);
     if(!chs.length) unknown.push(f.name);
-    for(const ch of chs){ entries.push([K(ch.b,ch.c), {h:ch.h, v:ch.v}]); perBook[ch.b]=(perBook[ch.b]||new Set()).add(ch.c); }
+    if(chs.some(ch=>ch.lang==='en')){ const m=f.name.match(/(?:^|[^a-z])(NIV|NKJV|KJV|ESV|NLT|NASB|WEB|ASV|NRSV|CSB|MSG)(?![a-z])/i); if(m) META.enName=m[1].toUpperCase(); else if(!META.enName) META.enName='English'; }
+    for(const ch of chs){ entries.push([TK(ch.lang,ch.b,ch.c), {h:ch.h, v:ch.v}]); (per[ch.lang][ch.b]=per[ch.lang][ch.b]||new Set()).add(ch.c); }
   }
   if(entries.length) await DB.putMany('text', entries);
   HAVE = new Set(await DB.keys('text'));
   META.imported = today(); META.version = META.version || '개역개정';
   await save('meta');
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
-  return {entries:entries.length, perBook, unknown};
+  return {entries:entries.length, per, unknown};
 }
-function haveBook(b){ let n=0; for(let c=1;c<=BOOKS[b][2];c++) if(HAVE.has(K(b,c))) n++; return n; }
+const hasText = (ver,b,c) => HAVE.has(TK(ver,b,c));
+const verCount = ver => { let n=0; for(const k of HAVE) if(ver==='en' ? k.startsWith('en|') : !k.includes('|')) n++; return n; };
+const vName = ver => ver==='ko' ? (META.version||'개역개정') : (META.enName||'English');
+const getText = (ver,b,c) => DB.get('text', TK(ver,b,c));
+function haveBook(b, ver=S.ver){ let n=0; for(let c=1;c<=BOOKS[b][2];c++) if(hasText(ver,b,c)) n++; return n; }
 
 /* ───────── 백업 ───────── */
 async function exportBackup(){
@@ -461,7 +530,7 @@ function viewHome(){
   const n=readCount(), ot=rangeRead(0,OT_COUNT), nt=rangeRead(OT_COUNT,66);
   const nx=nextUnread(), st=streak(), td=LOG[today()]||0, wk=lastNDays(7);
   let h='';
-  if(HAVE.size===0){
+  if(verCount('ko')+verCount('en')===0){
     h+=`<div class="card notice"><h2>성경 본문을 먼저 불러와 주세요</h2>
       <p class="small">아이폰 '파일' 앱에 저장해 둔 개역개정 TXT 파일(66개)을 한 번에 선택하면 됩니다. 본문은 이 기기 안에만 저장됩니다.</p>
       <button class="btn primary block" data-act="import">본문 파일 불러오기</button>
@@ -514,10 +583,11 @@ function viewBooks(){
   return h+'</div>';
 }
 function parseJump(q){
-  const m=norm(q).match(/^([가-힣]+)(\d+)?(?:[:장편.](\d+))?/);
+  const m=normL(q).match(/^(\d?[a-z가-힣]+)(\d+)?(?:[:장편.](\d+))?/);
   if(!m) return null;
   let b=NAME_IDX.get(m[1]);
   if(b===undefined) b=BOOKS.findIndex(x=>x[0].startsWith(m[1]));
+  if(b<0) b=EN_BOOKS.findIndex(x=>normL(x).startsWith(m[1]));
   if(b<0) return null;
   const c=Math.min(Math.max(+(m[2]||1),1),BOOKS[b][2]);
   return {b,c,v:m[3]?+m[3]:null};
@@ -547,16 +617,29 @@ function viewBook(b){
 let readerObs=null, readerOpened=0, pendingVerse=null;
 async function viewRead(b,c){
   LAST={b,c}; save('last');
-  const right=`<button class="icon-btn" data-go="#book/${b}" aria-label="장 목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></button>`;
-  setHeader(chName(b,c), `#book/${b}`, right);
-  const data=await DB.get('text',K(b,c));
-  CUR={b,c,data}; SEL=null;
+  const right=`<button class="icon-btn" data-act="tts" aria-label="듣기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button><button class="icon-btn" data-go="#book/${b}" aria-label="장 목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></button>`;
+  // 고른 번역본이 없으면 있는 쪽으로 보여 줌
+  let ver = S.ver;
+  if(!hasText(ver,b,c) && hasText(otherVer(ver),b,c)) ver = otherVer(ver);
+  const alt = otherVer(ver), both = hasText('ko',b,c) && hasText('en',b,c);
+  setHeader(chName(b,c)+(ver==='en'?` · ${vName('en')}`:''), `#book/${b}`, right);
+  const data = await getText(ver,b,c);
+  const altData = both && (S.par || S.ttsBoth) ? await getText(alt,b,c) : null;
+  CUR={b,c,data,ver,alt:altData,altVer:alt}; SEL=null;
   const font = S.face==='serif' ? 'var(--serif)' : 'var(--sans)';
-  let h=`<article class="reader" id="reader" style="font-size:${S.font}px;line-height:${S.lh};font-family:${font}">`;
+  let h='';
+  if(verCount('en') && verCount('ko')){
+    h+=`<div class="verbar"><div class="seg"><button class="${ver==='ko'?'on':''}" data-act="ver" data-v="ko">${esc(vName('ko'))}</button><button class="${ver==='en'?'on':''}" data-act="ver" data-v="en">${esc(vName('en'))}</button></div>
+      <button class="chip ${S.par?'on':''}" data-act="par">대역 보기</button></div>`;
+  }
+  h+=`<article class="reader ${ver==='en'?'en':''}" id="reader" lang="${ver}" style="font-size:${S.font}px;line-height:${S.lh};font-family:${font}">`;
   if(data){
     const marked=new Set(); BM.filter(x=>x.b===b&&x.c===c).forEach(x=>{ for(let v=x.v1;v<=x.v2;v++) marked.add(v); });
-    const heads={}; for(const [i,t] of data.h) (heads[i]=heads[i]||[]).push(t);
-    data.v.forEach(([n,t],i)=>{ if(heads[i]) heads[i].forEach(x=>h+=`<h3>${esc(x)}</h3>`); h+=`<p id="v${n}" data-v="${n}" class="${marked.has(n)?'bm':''}"><sup>${n}</sup>${esc(t)}</p>`; });
+    const heads={}; if(ver==='ko') for(const [i,t] of data.h) (heads[i]=heads[i]||[]).push(t);
+    const altMap = S.par && altData ? new Map(altData.v) : null;
+    data.v.forEach(([n,t],i)=>{ if(heads[i]) heads[i].forEach(x=>h+=`<h3>${esc(x)}</h3>`);
+      const a = altMap && altMap.get(n);
+      h+=`<p id="v${n}" data-v="${n}" class="${marked.has(n)?'bm':''}"><sup>${n}</sup>${esc(t)}${a?`<span class="alt" lang="${alt}">${esc(a)}</span>`:''}</p>`; });
     if(heads[data.v.length]) heads[data.v.length].forEach(x=>h+=`<h3>${esc(x)}</h3>`);
   }else{
     h+=`<div class="empty muted"><p>이 장의 본문이 저장되어 있지 않습니다.</p><p class="small">설정에서 본문 파일을 불러오거나,<br>종이 성경으로 읽고 아래에서 체크하세요.</p></div>`;
@@ -568,8 +651,30 @@ async function viewRead(b,c){
     <button class="btn mark-btn ${rd?'on':''}" data-act="mark">${rd?'✓ 읽음 (다시 누르면 취소)':'이 장 읽음'}</button>
     <button class="btn" ${next?`data-go="#read/${next.b}/${next.c}"`:'disabled'} aria-label="다음 장">›</button></div>
     ${next?`<button class="btn primary block ${rd?'':'hidden'}" id="goNext" data-go="#read/${next.b}/${next.c}">다음 장 읽기 · ${chName(next.b,next.c)} ›</button>`:''}
-    ${data?'<p class="read-hint">구절을 누르면 즐겨찾기·메모를 남길 수 있습니다</p>':''}`;
+    ${data?'<p class="read-hint">구절을 누르면 즐겨찾기·메모·한영 대조를 할 수 있습니다</p>':''}`;
   return h;
+}
+
+/* 선택한 구절을 두 번역본으로 나란히 보기 */
+async function compareModal(b,c,s,e){
+  const [ko,en]=await Promise.all([getText('ko',b,c), getText('en',b,c)]);
+  const mk=d=>new Map(d?d.v:[]);
+  const K1=mk(ko), E1=mk(en);
+  let rows='';
+  for(let v=s; v<=e; v++){
+    if(!K1.has(v) && !E1.has(v)) continue;
+    rows+=`<div class="cmp-row"><div class="cmp-n">${v}</div><div class="cmp-t">
+      <div class="cmp-ko">${K1.has(v)?esc(K1.get(v)):'<span class="muted small">(이 번역본에 없는 절)</span>'}</div>
+      <div class="cmp-en" lang="en">${E1.has(v)?esc(E1.get(v)):`<span class="muted small">(${esc(vName('en'))}에는 없는 절)</span>`}</div></div></div>`;
+  }
+  const ref=`${BOOKS[b][0]} ${c}:${s}${e>s?'-'+e:''}`, refEn=`${EN_BOOKS[b]} ${c}:${s}${e>s?'-'+e:''}`;
+  const txt = ref+' ('+vName('ko')+')\n'+[...Array(e-s+1)].map((_,i)=>K1.get(s+i)).filter(Boolean).join(' ')
+            + '\n\n'+refEn+' ('+vName('en')+')\n'+[...Array(e-s+1)].map((_,i)=>E1.get(s+i)).filter(Boolean).join(' ');
+  const r = await modal(`${esc(ref)} <span class="small muted" style="font-weight:400">${esc(refEn)}</span>`,
+    `<div class="cmp-head"><span>${esc(vName('ko'))}</span><span>${esc(vName('en'))}</span></div><div class="cmp">${rows||'<p class="muted">본문이 없습니다.</p>'}</div>`,
+    [{t:'둘 다 복사'},{t:'듣기'},{t:'닫기',primary:true}]);
+  if(r===0) copyText(txt);
+  if(r===1){ const q=[]; for(let v=s;v<=e;v++){ if(K1.has(v)) q.push({v,text:K1.get(v),lang:LANG.ko}); if(E1.has(v)) q.push({v,text:E1.get(v),lang:LANG.en}); } speakList(q); }
 }
 
 /* ───────── 구절 선택 · 즐겨찾기 ───────── */
@@ -584,6 +689,8 @@ function paintSel(){
   bar.classList.remove('hidden');
   $('#selRef').textContent = refTxt({b:CUR.b,c:CUR.c,v1:SEL.s,v2:SEL.e});
   $('#selSave').textContent = findBm(CUR.b,CUR.c,SEL.s,SEL.e) ? '★ 수정' : '★ 즐겨찾기';
+  $('#selCmp').classList.toggle('hidden', !(hasText('ko',CUR.b,CUR.c) && hasText('en',CUR.b,CUR.c)));
+  if(TTS.bar && !TTS.on) ttsBar();
 }
 function tapVerse(v){
   if(!SEL){
@@ -655,7 +762,7 @@ async function saveSelection(){
   if(!SEL||!CUR||!CUR.data) return;
   const {b,c}=CUR;
   let bm=findBm(b,c,SEL.s,SEL.e);
-  if(!bm) bm={id:uid(), b, c, v1:SEL.s, v2:SEL.e, text:selVerses(), cats:[], memo:'', songs:[]};
+  if(!bm) bm={id:uid(), b, c, v1:SEL.s, v2:SEL.e, text:selVerses(), ver:CUR.ver, cats:[], memo:'', songs:[]};
   const r=await editBookmark(bm);
   if(r){ SEL=null; rerender(); }
 }
@@ -699,7 +806,9 @@ function afterRead(b,c){
     if(el){ setTimeout(()=>{ el.scrollIntoView({block:'center'}); el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),2500); },50); } }
   readerOpened=Date.now();
   if(readerObs) readerObs.disconnect();
-  if(S.auto && !isRead(b,c) && HAVE.has(K(b,c))){
+  if(TTS.on || TTS.paused){ ttsHighlight(); ttsBar(); }
+  if(TTS.autoNav){ TTS.autoNav=false; setTimeout(()=>ttsPlay(1), 350); }
+  if(S.auto && !isRead(b,c) && CUR && CUR.data){
     let timer=null;
     readerObs=new IntersectionObserver(es=>{
       const vis=es[0].isIntersecting; clearTimeout(timer);
@@ -715,6 +824,99 @@ function afterRead(b,c){
   art.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
     if(Math.abs(dx)>90 && Math.abs(dy)<45){ const t= dx<0 ? nextCh(b,c) : prevCh(b,c); if(t) location.hash=`#read/${t.b}/${t.c}`; } },{passive:true});
 }
+
+/* ───────── 듣기 (TTS) ───────── */
+const TTS={on:false, paused:false, queue:[], i:0, u:null, key:'', autoNav:false, sleepAt:0, lock:null, bar:false, list:false};
+const ttsOK = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let VOICES=[];
+function loadVoices(){ try{ VOICES=speechSynthesis.getVoices()||[]; }catch(e){ VOICES=[]; } }
+if(ttsOK){ loadVoices(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); if(route().v==='settings') rerender(); }); }
+const voicesFor = lang => VOICES.filter(v=>v.lang && v.lang.replace('_','-').toLowerCase().startsWith(lang.slice(0,2)));
+function pickVoice(lang){
+  const list=voicesFor(lang), want=S['voice_'+lang.slice(0,2)];
+  return list.find(v=>v.voiceURI===want) || list.find(v=>/premium|enhanced|향상|natural|neural/i.test(v.name)) || list.find(v=>v.default) || list[0] || null;
+}
+async function wakeOn(){ try{ if(navigator.wakeLock && !TTS.lock){ TTS.lock=await navigator.wakeLock.request('screen'); TTS.lock.addEventListener('release',()=>{TTS.lock=null;}); } }catch(e){} }
+function wakeOff(){ try{ TTS.lock && TTS.lock.release(); }catch(e){} TTS.lock=null; }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && TTS.on) wakeOn(); });
+
+function buildQueue(){
+  const q=[]; if(!CUR||!CUR.data) return q;
+  const altMap = S.ttsBoth && CUR.alt ? new Map(CUR.alt.v) : null;
+  for(const [n,t] of CUR.data.v){
+    q.push({v:n, text:t, lang:LANG[CUR.ver]});
+    if(altMap && altMap.get(n)) q.push({v:n, text:altMap.get(n), lang:LANG[CUR.altVer]});
+  }
+  return q;
+}
+function ttsPlay(from){
+  if(!ttsOK) return toast('이 기기에서는 듣기를 지원하지 않습니다');
+  if(!CUR||!CUR.data) return toast('본문이 있는 장에서 들을 수 있습니다');
+  TTS.list=false; TTS.queue=buildQueue(); TTS.key=CUR.b+'/'+CUR.c;
+  let i=TTS.queue.findIndex(x=>x.v>=from); TTS.i = i<0 ? 0 : i;
+  TTS.on=true; TTS.paused=false; TTS.bar=true; wakeOn(); speakCur();
+}
+function speakList(q){             // 대조 창 등에서 몇 구절만 듣기
+  if(!ttsOK) return toast('이 기기에서는 듣기를 지원하지 않습니다');
+  ttsStop(true); TTS.list=true; TTS.queue=q; TTS.i=0; TTS.on=true; TTS.key=''; wakeOn(); speakCur();
+}
+function speakCur(){
+  try{ if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); }catch(e){}
+  const it=TTS.queue[TTS.i];
+  if(!it){ return TTS.list ? ttsStop() : chapterDone(); }
+  ttsHighlight(); ttsBar();
+  const u=new SpeechSynthesisUtterance(it.text);
+  u.lang=it.lang; const vo=pickVoice(it.lang); if(vo) u.voice=vo; u.rate=S.ttsRate;
+  u.onend=()=>{ if(!TTS.on || TTS.u!==u) return;
+    if(TTS.sleepAt && Date.now()>=TTS.sleepAt){ ttsStop(); toast('취침 타이머로 멈췄습니다'); return; }
+    TTS.i++; speakCur(); };
+  u.onerror=e=>{ if(TTS.u!==u || e.error==='interrupted' || e.error==='canceled') return; if(!TTS.on) return; TTS.i++; speakCur(); };
+  TTS.u=u;
+  speechSynthesis.speak(u);   // 아이폰은 첫 재생이 버튼 누름 안에서 바로 시작돼야 함
+}
+async function chapterDone(){
+  const {b,c}=CUR;
+  if(S.ttsMark && !isRead(b,c)){ await setRead(b,c,true,{silent:true}); markUI(true); }
+  const nx=nextCh(b,c);
+  if(S.ttsNext && nx && hasText(CUR.ver,nx.b,nx.c)){ TTS.autoNav=true; location.hash=`#read/${nx.b}/${nx.c}`; }
+  else { ttsStop(); toast('다 들었습니다'); }
+}
+function ttsPause(){ TTS.on=false; TTS.paused=true; TTS.u=null; try{ speechSynthesis.cancel(); }catch(e){} wakeOff(); ttsBar(); }
+function ttsResume(){ if(!TTS.queue.length) return ttsPlay(SEL?SEL.s:1); TTS.on=true; TTS.paused=false; wakeOn(); speakCur(); }
+function ttsStop(keepBar){
+  TTS.on=false; TTS.paused=false; TTS.u=null; TTS.queue=[]; TTS.i=0; TTS.sleepAt=0; TTS.list=false;
+  try{ speechSynthesis.cancel(); }catch(e){} wakeOff();
+  document.querySelectorAll('.reader p.speaking').forEach(p=>p.classList.remove('speaking'));
+  if(!keepBar) ttsBar();
+}
+function ttsStep(d){
+  if(!TTS.queue.length) return;
+  const curV=(TTS.queue[TTS.i]||{}).v; let i=TTS.i;
+  if(d>0){ while(i<TTS.queue.length && TTS.queue[i].v===curV) i++; }
+  else { while(i>0 && TTS.queue[i-1].v===curV) i--; if(i>0){ const pv=TTS.queue[i-1].v; i--; while(i>0 && TTS.queue[i-1].v===pv) i--; } }
+  TTS.i=Math.max(0,Math.min(i,TTS.queue.length)); if(TTS.on) speakCur(); else { ttsHighlight(); ttsBar(); }
+}
+function ttsHighlight(){
+  document.querySelectorAll('.reader p.speaking').forEach(p=>p.classList.remove('speaking'));
+  const it=TTS.queue[TTS.i]; if(!it || TTS.list || !CUR || TTS.key!==CUR.b+'/'+CUR.c) return;
+  const el=document.getElementById('v'+it.v); if(!el) return;
+  el.classList.add('speaking');
+  if(S.ttsFollow && TTS.on){ const r=el.getBoundingClientRect(); if(r.top<80 || r.bottom>innerHeight-170) el.scrollIntoView({block:'center',behavior:'smooth'}); }
+}
+const RATES=[0.7,0.85,1,1.15,1.3,1.5], SLEEPS=[0,15,30,60];
+function ttsBar(){
+  const bar=$('#ttsbar'), show = TTS.bar && route().v==='read';
+  bar.classList.toggle('hidden', !show); document.body.classList.toggle('has-tts', show);
+  if(!show) return;
+  const it=TTS.queue[TTS.i], total=CUR&&CUR.data?CUR.data.v.length:0;
+  $('#ttsPlay').innerHTML = TTS.on ? '❚❚' : '▶';
+  $('#ttsPlay').setAttribute('aria-label', TTS.on?'일시정지':'재생');
+  $('#ttsInfo').textContent = it ? `${it.v}절${total?' / '+total:''}${it.lang===LANG.en?' · EN':''}` : (SEL?`${SEL.s}절부터`:'처음부터');
+  $('#ttsRate').textContent = (+S.ttsRate).toFixed(2).replace(/0$/,'').replace(/\.0$/,'')+'x';
+  const left = TTS.sleepAt ? Math.max(0,Math.ceil((TTS.sleepAt-Date.now())/60000)) : 0;
+  $('#ttsSleep').textContent = left ? `⏱${left}분` : '⏱';
+}
+setInterval(()=>{ if(TTS.sleepAt) ttsBar(); }, 30000);
 
 /* ───────── 화면: 기록 ───────── */
 function viewStats(){
@@ -758,7 +960,7 @@ function bmList(){
       ${x.memo?`<div class="bm-memo">${esc(x.memo)}</div>`:''}
       ${(x.songs||[]).length?`<div class="bm-songs">${x.songs.map(s=>`<div>${esc(s)}</div>`).join('')}</div>`:''}
       ${(x.cats||[]).length?`<div class="tags">${x.cats.map(id=>catName(id)).filter(Boolean).map(n=>`<span class="tag">${esc(n)}</span>`).join('')}</div>`:''}
-      <div class="bm-acts"><button class="btn" data-copybm="${x.id}">복사</button><button class="btn" data-editbm="${x.id}">편집</button></div></div>`).join('');
+      <div class="bm-acts">${hasText('ko',x.b,x.c)&&hasText('en',x.b,x.c)?`<button class="btn" data-cmpbm="${x.id}">한/영</button>`:''}<button class="btn" data-copybm="${x.id}">복사</button><button class="btn" data-editbm="${x.id}">편집</button></div></div>`).join('');
 }
 function viewBookmarks(){
   setHeader('즐겨찾기', null, `<button class="btn" style="padding:7px 12px;font-size:13px" data-act="cats">카테고리 관리</button>`);
@@ -776,9 +978,26 @@ function viewSettings(){
   const sel=(k,v)=>S[k]===v?'on':'';
   return `
   <div class="card"><h2>성경 본문</h2>
-    <p class="small" style="margin:0 0 10px">${HAVE.size?`<b>${META.version||'개역개정'}</b> · ${HAVE.size}/${TOTAL}장 저장됨 <span class="muted">(${fmtDate(META.imported)})</span>`:'<span class="muted">아직 불러온 본문이 없습니다.</span>'}</p>
-    <div class="btn-col"><button class="btn primary" data-act="import">본문 파일 불러오기 (TXT 여러 개 선택)</button>
-    ${HAVE.size?'<button class="btn warn" data-act="cleartext">저장된 본문 삭제</button>':''}</div></div>
+    <table style="width:100%;font-size:14px;border-collapse:collapse;margin:0 0 10px">
+      ${VERS.map(v=>`<tr><td style="padding:4px 0"><b>${esc(vName(v))}</b> <span class="small muted">${v==='ko'?'한글':'영어'}</span></td><td style="text-align:right" class="${verCount(v)?'':'muted'}">${verCount(v)}/${TOTAL}장</td></tr>`).join('')}
+    </table>
+    <div class="set-row"><label>기본 번역본</label><div class="seg" style="width:200px"><button class="${S.ver==='ko'?'on':''}" data-act="ver" data-v="ko">${esc(vName('ko'))}</button><button class="${S.ver==='en'?'on':''}" data-act="ver" data-v="en">${esc(vName('en'))}</button></div></div>
+    <div class="set-row"><label>대역 보기<br><span class="small muted">절마다 다른 번역본을 함께 표시</span></label><input type="checkbox" class="switch" data-toggle="par" ${S.par?'checked':''}></div>
+    <div class="btn-col" style="margin-top:8px"><button class="btn primary" data-act="import">본문 파일 불러오기 (한글·영어 자동 구분)</button>
+    ${HAVE.size?'<button class="btn warn" data-act="cleartext">저장된 본문 모두 삭제</button>':''}</div></div>
+
+  <div class="card"><h2>듣기 (음성으로 읽기)</h2>
+    ${ttsOK?`
+    <div class="set-row"><label>속도 <span class="muted small" id="ttsRateV">${S.ttsRate}</span></label><input type="range" min="0.6" max="1.6" step="0.05" value="${S.ttsRate}" data-set="ttsRate"></div>
+    ${['ko','en'].map(l=>{ const vs=voicesFor(LANG[l]); return `<div class="set-row"><label>${l==='ko'?'한국어':'영어'} 음성</label>${vs.length?`<select class="inp" data-voice="voice_${l}"><option value="">자동 선택</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${S['voice_'+l]===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select>`:'<span class="small muted">기기 기본 음성</span>'}</div>`; }).join('')}
+    <div class="set-row"><label>대역 듣기<br><span class="small muted">한 절씩 한글 → 영어 순서로</span></label><input type="checkbox" class="switch" data-toggle="ttsBoth" ${S.ttsBoth?'checked':''}></div>
+    <div class="set-row"><label>장이 끝나면 다음 장 이어 듣기</label><input type="checkbox" class="switch" data-toggle="ttsNext" ${S.ttsNext?'checked':''}></div>
+    <div class="set-row"><label>끝까지 들은 장 읽음 체크</label><input type="checkbox" class="switch" data-toggle="ttsMark" ${S.ttsMark?'checked':''}></div>
+    <div class="set-row"><label>읽는 구절 따라 화면 이동</label><input type="checkbox" class="switch" data-toggle="ttsFollow" ${S.ttsFollow?'checked':''}></div>
+    <div class="btn-col" style="margin-top:8px"><button class="btn" data-act="ttstest">음성 미리 듣기</button></div>
+    <p class="small muted" style="margin:10px 0 0">듣는 동안 화면이 꺼지지 않게 합니다. 아이폰은 화면을 잠그거나 다른 앱으로 넘어가면 멈출 수 있습니다. 더 자연스러운 음성은 아이폰 설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성에서 내려받을 수 있습니다.</p>`
+    :'<p class="small muted" style="margin:0">이 브라우저는 음성 읽기를 지원하지 않습니다.</p>'}
+  </div>
 
   <div class="card"><h2>읽기 화면</h2>
     <div class="set-row"><label>글자 크기 <span class="muted small" id="fontV">${S.font}</span></label><input type="range" min="14" max="30" step="1" value="${S.font}" data-set="font"></div>
@@ -808,6 +1027,9 @@ async function render(){
   if(!P) return;   // 저장소를 다 읽기 전에는 그리지 않음
   const r=route(); let html='';
   if(r.v!=='read' && readerObs){ readerObs.disconnect(); readerObs=null; }
+  // 다른 장·화면으로 가면 듣기 멈춤 (자동으로 다음 장 넘어갈 때는 유지)
+  if((TTS.on||TTS.paused) && !TTS.list && !TTS.autoNav && (r.v!=='read' || `${r.a}/${r.b}`!==TTS.key)) ttsStop(true);
+  if(r.v!=='read') TTS.bar=false;
   SEL=null; $('#selbar').classList.add('hidden'); document.body.classList.remove('has-sel');
   if(r.v==='books') html=viewBooks();
   else if(r.v==='bookmarks') html=viewBookmarks();
@@ -819,6 +1041,7 @@ async function render(){
   $('#main').innerHTML=html;
   const tab = {home:'#home',books:'#books',book:'#books',read:'#books',bookmarks:'#bookmarks',stats:'#stats',settings:'#settings'}[r.v]||'#home';
   document.querySelectorAll('.tabs button').forEach(t=>t.classList.toggle('on', t.dataset.go===tab));
+  ttsBar();
   if(r.v==='read') afterRead(r.a,r.b); else if(!keepScroll) window.scrollTo(0,0);
   keepScroll=false;
 }
@@ -837,6 +1060,8 @@ document.addEventListener('click', async e=>{
   if(so){ bmSort=so.dataset.sort; rerender(); return; }
   const eb=e.target.closest('[data-editbm]');
   if(eb){ const bm=BM.find(x=>x.id===eb.dataset.editbm); if(bm && await editBookmark(bm)) rerender(); return; }
+  const mb=e.target.closest('[data-cmpbm]');
+  if(mb){ const bm=BM.find(x=>x.id===mb.dataset.cmpbm); if(bm) compareModal(bm.b,bm.c,bm.v1,bm.v2); return; }
   const cb=e.target.closest('[data-copybm]');
   if(cb){ const bm=BM.find(x=>x.id===cb.dataset.copybm); if(bm) copyText(plainText(refTxt(bm), bm.text)); return; }
   const ch=e.target.closest('[data-ch]');
@@ -846,6 +1071,18 @@ document.addEventListener('click', async e=>{
   const act=el.dataset.act, r=route();
   if(act==='selcopy'){ if(SEL) copyText(plainText(refTxt({b:CUR.b,c:CUR.c,v1:SEL.s,v2:SEL.e}), selVerses())); }
   else if(act==='selsave') saveSelection();
+  else if(act==='selcmp'){ if(SEL) compareModal(CUR.b,CUR.c,SEL.s,SEL.e); }
+  else if(act==='ver'){ S.ver=el.dataset.v; await save('settings'); if(route().v==='read') ttsStop(); rerender(); }
+  else if(act==='par'){ S.par=!S.par; await save('settings'); rerender(); }
+  else if(act==='tts'){ if(TTS.bar){ ttsStop(); TTS.bar=false; ttsBar(); } else { TTS.bar=true; ttsPlay(SEL?SEL.s:1); } }
+  else if(act==='ttsplay'){ if(TTS.on) ttsPause(); else if(TTS.paused) ttsResume(); else ttsPlay(SEL?SEL.s:1); }
+  else if(act==='ttsprev') ttsStep(-1);
+  else if(act==='ttsnext') ttsStep(1);
+  else if(act==='ttsrate'){ const i=RATES.findIndex(x=>x>=S.ttsRate-0.001); S.ttsRate=RATES[(i+1)%RATES.length]; await save('settings'); ttsBar(); if(TTS.on) speakCur(); }
+  else if(act==='ttssleep'){ const cur=TTS.sleepAt?Math.round((TTS.sleepAt-Date.now())/60000):0; const i=SLEEPS.findIndex(x=>x>cur); const m=SLEEPS[i<0?0:i];
+    TTS.sleepAt = m ? Date.now()+m*60000 : 0; toast(m?`${m}분 뒤에 멈춥니다`:'취침 타이머를 껐습니다'); ttsBar(); }
+  else if(act==='ttsclose'){ ttsStop(); TTS.bar=false; ttsBar(); }
+  else if(act==='ttstest'){ speakList([{v:1,text:'태초에 하나님이 천지를 창조하시니라',lang:LANG.ko},{v:1,text:'In the beginning God created the heavens and the earth.',lang:LANG.en}]); }
   else if(act==='selclear'){ SEL=null; paintSel(); }
   else if(act==='cats'){ await manageCats(); rerender(); }
   else if(act==='import') $('#fileText').click();
@@ -870,20 +1107,26 @@ document.addEventListener('submit', e=>{
 });
 document.addEventListener('input', async e=>{
   if(e.target.id==='bmQ'){ bmQuery=e.target.value; $('#bmList').innerHTML=bmList(); return; }
-  const k=e.target.dataset.set; if(k){ S[k]=+e.target.value; $('#'+k+'V').textContent=S[k];
-    const pv=$('#preview'); pv.style.fontSize=S.font+'px'; pv.style.lineHeight=S.lh; save('settings'); }
+  const k=e.target.dataset.set; if(k){ S[k]=+e.target.value; const lb=$('#'+k+'V'); if(lb) lb.textContent=S[k];
+    const pv=$('#preview'); if(pv){ pv.style.fontSize=S.font+'px'; pv.style.lineHeight=S.lh; } save('settings'); }
 });
 document.addEventListener('change', async e=>{
   const k=e.target.dataset.toggle; if(k){ S[k]=e.target.checked; await save('settings'); }
+  const vk=e.target.dataset.voice; if(vk){ S[vk]=e.target.value; await save('settings'); }
 });
 $('#fileText').addEventListener('change', async e=>{
   const files=[...e.target.files]; e.target.value=''; if(!files.length) return;
   toast(`${files.length}개 파일을 읽는 중…`);
   try{
     const rep=await importFiles(files);
-    const short=[]; Object.entries(rep.perBook).forEach(([b,set])=>{ if(set.size<BOOKS[b][2]) short.push(`${BOOKS[b][0]} ${set.size}/${BOOKS[b][2]}`); });
-    const books=Object.keys(rep.perBook).length;
-    await modal('불러오기 완료', `<p><b>${books}권 ${rep.entries}장</b>을 저장했습니다.<br><span class="small muted">전체 저장: ${HAVE.size}/${TOTAL}장</span></p>
+    const short=[], lines=[];
+    VERS.forEach(ver=>{ const pb=rep.per[ver], books=Object.keys(pb).length; if(!books) return;
+      const chs=Object.values(pb).reduce((s,x)=>s+x.size,0);
+      lines.push(`<b>${esc(vName(ver))}</b> ${books}권 ${chs}장`);
+      Object.entries(pb).forEach(([b,set])=>{ if(set.size<BOOKS[b][2]) short.push(`${vName(ver)} ${BOOKS[b][0]} ${set.size}/${BOOKS[b][2]}`); }); });
+    if(rep.per.en && Object.keys(rep.per.en).length && !Object.keys(rep.per.ko).length && !verCount('ko')){ S.ver='en'; await save('settings'); }
+    await modal('불러오기 완료', `<p>${lines.join('<br>')||'저장한 본문이 없습니다.'}</p>
+      <p class="small muted">저장된 본문: ${esc(vName('ko'))} ${verCount('ko')}/${TOTAL}장 · ${esc(vName('en'))} ${verCount('en')}/${TOTAL}장</p>
       ${short.length?`<p class="small" style="color:var(--warn)">장 수가 모자란 책: ${short.map(esc).join(', ')}</p>`:''}
       ${rep.unknown.length?`<p class="small" style="color:var(--warn)">읽지 못한 파일: ${rep.unknown.map(esc).join(', ')}</p>`:''}`, [{t:'확인',primary:true}]);
   }catch(err){ console.error(err); toast('불러오기 중 오류가 났습니다'); }
