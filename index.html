@@ -17,6 +17,7 @@
   --bg:#f7f5f0; --surface:#ffffff; --text:#1f2328; --muted:#6b7068; --line:#e6e1d6;
   --accent:#2f5d50; --accent-ink:#ffffff; --soft:#e4ece8; --warn:#b5651d; --warn-soft:#f8ecdf;
   --h0:#ebe7dd; --h1:#c4d9cf; --h2:#8db8a6; --h3:#4f8c76; --h4:#2f5d50;
+  --sel:#d3e5dc; --bm:#fbf0e1;
   --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
   --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
   --serif:"AppleMyungjo","Nanum Myeongjo","Noto Serif KR","Batang",serif;
@@ -26,6 +27,7 @@
     --bg:#121513; --surface:#1b1f1c; --text:#e7e5df; --muted:#9aa29c; --line:#2b312d;
     --accent:#76b9a1; --accent-ink:#0f1a15; --soft:#22322b; --warn:#e0a060; --warn-soft:#3a2c1e;
     --h0:#232825; --h1:#2c4a3e; --h2:#3c6e5b; --h3:#56977d; --h4:#7cc2a6;
+    --sel:#28443a; --bm:#2f261b;
     --shadow:none;
   }
 }
@@ -33,6 +35,7 @@
   --bg:#121513; --surface:#1b1f1c; --text:#e7e5df; --muted:#9aa29c; --line:#2b312d;
   --accent:#76b9a1; --accent-ink:#0f1a15; --soft:#22322b; --warn:#e0a060; --warn-soft:#3a2c1e;
   --h0:#232825; --h1:#2c4a3e; --h2:#3c6e5b; --h3:#56977d; --h4:#7cc2a6;
+  --sel:#28443a; --bm:#2f261b;
   --shadow:none;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -114,9 +117,55 @@ main{max-width:720px;margin:0 auto;padding:14px 16px 24px}
 .reader{padding:6px 2px 10px;word-break:keep-all;overflow-wrap:anywhere}
 .reader h3{font-size:.82em;font-weight:700;color:var(--accent);margin:1.6em 0 .5em;font-family:var(--sans)}
 .reader h3:first-child{margin-top:.4em}
-.reader p{margin:0 0 .35em}
+.reader p{margin:0 -6px .2em;padding:2px 6px;border-radius:8px;cursor:pointer;transition:background .15s}
 .reader sup{font-size:.6em;color:var(--muted);font-weight:700;margin-right:.35em;font-family:var(--sans);vertical-align:.45em}
-.reader p.hl{background:var(--warn-soft);border-radius:6px;transition:background 2s}
+.reader p.bm{background:var(--bm)}
+.reader p.bm sup{color:var(--warn)}
+.reader p.bm sup::after{content:"★";margin-left:1px}
+.reader p.sel{background:var(--sel)}
+.reader p.hl{background:var(--warn-soft);transition:background 2s}
+.read-hint{font-size:12px;color:var(--muted);text-align:center;margin:4px 0 0}
+
+/* 구절 선택 바 */
+.selbar{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));z-index:40;display:flex;justify-content:center;padding:8px 12px;pointer-events:none}
+.selbar .inner{pointer-events:auto;background:var(--text);color:var(--bg);border-radius:16px;display:flex;gap:2px;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:460px;width:100%;align-items:center}
+.selbar .ref{flex:1;padding:0 8px;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selbar button{border:0;background:transparent;color:inherit;padding:10px 11px;border-radius:10px;font-weight:600;font-size:14px;white-space:nowrap}
+.selbar button.pri{background:var(--accent);color:var(--accent-ink)}
+
+/* 즐겨찾기 */
+.field{margin-top:14px}
+.field>label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.field textarea,.field input,.inp{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.field textarea{min-height:80px;resize:vertical;line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.add{border-style:dashed;color:var(--muted)}
+.chip .n{opacity:.65;font-size:12px;margin-left:3px}
+.quote{font-family:var(--serif);font-size:16px;line-height:1.7;background:var(--bg);border-radius:12px;padding:10px 12px;max-height:160px;overflow:auto;word-break:keep-all}
+.quote sup,.bm-text sup{font-size:.62em;color:var(--muted);font-weight:700;margin-right:.3em;font-family:var(--sans)}
+.filter{display:flex;gap:6px;overflow-x:auto;margin:10px -16px 4px;padding:0 16px 6px;scrollbar-width:none}
+.filter::-webkit-scrollbar{display:none}
+.bm-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.bm-ref{font-weight:700;color:var(--accent);font-size:14px;border:0;background:none;padding:0}
+.bm-text{font-family:var(--serif);font-size:16px;line-height:1.7;margin:6px 0 0;word-break:keep-all}
+.bm-memo{font-size:14px;background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:10px;white-space:pre-wrap;line-height:1.55}
+.bm-songs{margin-top:8px;font-size:14px;line-height:1.6}
+.bm-songs div::before{content:"♪ ";color:var(--warn);font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.tag{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:600}
+.bm-acts{display:flex;gap:6px;margin-top:10px;justify-content:flex-end}
+.bm-acts .btn{padding:7px 12px;font-size:13px}
+.cat-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.cat-row .inp{flex:1;min-width:0;padding:8px 10px}
+.cat-row .n{font-size:12px;color:var(--muted);width:28px;text-align:center}
+.cat-row button{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:36px;height:38px;flex:none}
+.modal.top{place-items:start center;padding-top:calc(env(safe-area-inset-top) + 20px)}
+.modal.top .box{max-height:calc(100dvh - env(safe-area-inset-top) - 40px);padding-bottom:0}
+.modal.top .acts{position:sticky;bottom:0;background:var(--surface);padding:12px 0 18px;margin-top:14px}
+.btn{white-space:nowrap}
+body.has-sel .toast{bottom:calc(140px + env(safe-area-inset-bottom))}
 .read-actions{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;margin:22px 0 6px}
 .read-actions .btn{padding:14px 8px}
 .mark-btn.on{background:var(--soft);color:var(--accent);border-color:var(--accent)}
@@ -171,16 +220,23 @@ input[type=range]{width:150px;accent-color:var(--accent)}
 <nav class="tabs" id="tabs">
   <button data-go="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>홈</button>
   <button data-go="#books"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20v-3"/><path d="M12 7v6M9 10h6"/></svg>성경</button>
+  <button data-go="#bookmarks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h11a1 1 0 0 1 1 1v17l-6.5-4.2L5.5 21V4a1 1 0 0 1 1-1z"/></svg>즐겨찾기</button>
   <button data-go="#stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="M8 14l2.5 2.5L16 12"/></svg>기록</button>
   <button data-go="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
 </nav>
 <input type="file" id="fileText" accept=".txt,text/plain" multiple class="hidden">
 <input type="file" id="fileBackup" accept=".json,application/json" class="hidden">
 <div class="toast" id="toast"></div>
+<div class="selbar hidden" id="selbar"><div class="inner">
+  <span class="ref" id="selRef"></span>
+  <button data-act="selcopy">복사</button>
+  <button class="pri" data-act="selsave" id="selSave">★ 즐겨찾기</button>
+  <button data-act="selclear" aria-label="선택 해제">✕</button>
+</div></div>
 
 <script>
 'use strict';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 
 /* ───────── 성경 66권 기본 정보 [이름, 약어, 장수] ───────── */
 const BOOKS = [
@@ -233,18 +289,23 @@ const DB = {
 };
 
 /* ───────── 상태 ───────── */
-let P, LOG, S, LAST, META, HAVE = new Set();
+let P, LOG, S, LAST, META, BM, CATS, HAVE = new Set();
 const DEFAULT_S = {font:19, lh:1.85, face:'serif', theme:'auto', auto:false};
+const DEFAULT_CATS = ['위로','감사','기도','믿음','소망','사랑','두려울 때','지칠 때','결단할 때'];
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 async function loadState(){
   P    = await DB.get('kv','progress') || {round:1, read:{}, start:null, history:[]};
   LOG  = await DB.get('kv','log') || {};
   S    = Object.assign({}, DEFAULT_S, await DB.get('kv','settings') || {});
   LAST = await DB.get('kv','last') || null;
   META = await DB.get('kv','meta') || {};
+  BM   = await DB.get('kv','bookmarks') || [];
+  CATS = await DB.get('kv','cats');
+  if(!CATS){ CATS = DEFAULT_CATS.map(name=>({id:uid(), name})); await DB.put('kv','cats',CATS); }
   HAVE = new Set(await DB.keys('text'));
 }
 function save(...keys){
-  const map = {progress:P, log:LOG, settings:S, last:LAST, meta:META};
+  const map = {progress:P, log:LOG, settings:S, last:LAST, meta:META, bookmarks:BM, cats:CATS};
   return Promise.all(keys.map(k=>DB.put('kv',k,map[k])));
 }
 
@@ -337,7 +398,7 @@ function haveBook(b){ let n=0; for(let c=1;c<=BOOKS[b][2];c++) if(HAVE.has(K(b,c
 
 /* ───────── 백업 ───────── */
 async function exportBackup(){
-  const data={app:'bible-reading-app', ver:1, exportedAt:new Date().toISOString(), progress:P, log:LOG, settings:S, last:LAST};
+  const data={app:'bible-reading-app', ver:2, exportedAt:new Date().toISOString(), progress:P, log:LOG, settings:S, last:LAST, bookmarks:BM, cats:CATS};
   const name=`성경읽기_백업_${today()}.json`;
   const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   const file=new File([blob],name,{type:'application/json'});
@@ -353,10 +414,12 @@ async function importBackup(file){
   let d; try{ d=JSON.parse(await file.text()); }catch(e){ return toast('백업 파일을 읽을 수 없습니다'); }
   if(!d || d.app!=='bible-reading-app' || !d.progress) return toast('이 앱의 백업 파일이 아닙니다');
   const n=Object.keys(d.progress.read||{}).length;
-  const ok = await confirmBox('백업 복원', `<p>${fmtDate((d.exportedAt||'').slice(0,10))} 백업입니다.<br>${d.progress.round}독 진행 중 · ${n}장 읽음</p><p class="small muted">지금 기록은 이 백업으로 바뀝니다.</p>`, '복원');
+  const nb = (d.bookmarks||[]).length;
+  const ok = await confirmBox('백업 복원', `<p>${fmtDate((d.exportedAt||'').slice(0,10))} 백업입니다.<br>${d.progress.round}독 진행 중 · ${n}장 읽음${d.bookmarks?` · 즐겨찾기 ${nb}개`:''}</p><p class="small muted">지금 기록은 이 백업으로 바뀝니다.</p>`, '복원');
   if(!ok) return;
   P=d.progress; LOG=d.log||{}; S=Object.assign({},DEFAULT_S,d.settings||{}); LAST=d.last||null;
-  await save('progress','log','settings','last'); applyTheme(); toast('복원했습니다'); render();
+  if(d.bookmarks){ BM=d.bookmarks; CATS=d.cats||CATS; }
+  await save('progress','log','settings','last','bookmarks','cats'); applyTheme(); toast('복원했습니다'); render();
 }
 
 /* ───────── UI 도우미 ───────── */
@@ -406,7 +469,7 @@ function viewHome(){
   }
   const lb=META.lastBackup;
   const firstDay = P.start || (P.history[0]&&P.history[0].start) || today();
-  if(n+P.history.length>0 && daysBetween(lb||firstDay, today())>=7){
+  if(n+P.history.length+BM.length>0 && daysBetween(lb||firstDay, today())>=7){
     h+=`<div class="card notice row between"><div class="small"><b>백업할 때가 됐어요</b><br><span class="muted">${lb?`마지막 백업 ${fmtDate(lb)}`:'아직 백업한 적이 없습니다'}</span></div>
       <button class="btn" data-act="backup">백업</button></div>`;
   }
@@ -487,11 +550,13 @@ async function viewRead(b,c){
   const right=`<button class="icon-btn" data-go="#book/${b}" aria-label="장 목록"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></button>`;
   setHeader(chName(b,c), `#book/${b}`, right);
   const data=await DB.get('text',K(b,c));
+  CUR={b,c,data}; SEL=null;
   const font = S.face==='serif' ? 'var(--serif)' : 'var(--sans)';
   let h=`<article class="reader" id="reader" style="font-size:${S.font}px;line-height:${S.lh};font-family:${font}">`;
   if(data){
+    const marked=new Set(); BM.filter(x=>x.b===b&&x.c===c).forEach(x=>{ for(let v=x.v1;v<=x.v2;v++) marked.add(v); });
     const heads={}; for(const [i,t] of data.h) (heads[i]=heads[i]||[]).push(t);
-    data.v.forEach(([n,t],i)=>{ if(heads[i]) heads[i].forEach(x=>h+=`<h3>${esc(x)}</h3>`); h+=`<p id="v${n}"><sup>${n}</sup>${esc(t)}</p>`; });
+    data.v.forEach(([n,t],i)=>{ if(heads[i]) heads[i].forEach(x=>h+=`<h3>${esc(x)}</h3>`); h+=`<p id="v${n}" data-v="${n}" class="${marked.has(n)?'bm':''}"><sup>${n}</sup>${esc(t)}</p>`; });
     if(heads[data.v.length]) heads[data.v.length].forEach(x=>h+=`<h3>${esc(x)}</h3>`);
   }else{
     h+=`<div class="empty muted"><p>이 장의 본문이 저장되어 있지 않습니다.</p><p class="small">설정에서 본문 파일을 불러오거나,<br>종이 성경으로 읽고 아래에서 체크하세요.</p></div>`;
@@ -502,8 +567,125 @@ async function viewRead(b,c){
     <button class="btn" ${prev?`data-go="#read/${prev.b}/${prev.c}"`:'disabled'} aria-label="이전 장">‹</button>
     <button class="btn mark-btn ${rd?'on':''}" data-act="mark">${rd?'✓ 읽음 (다시 누르면 취소)':'이 장 읽음'}</button>
     <button class="btn" ${next?`data-go="#read/${next.b}/${next.c}"`:'disabled'} aria-label="다음 장">›</button></div>
-    ${next?`<button class="btn primary block ${rd?'':'hidden'}" id="goNext" data-go="#read/${next.b}/${next.c}">다음 장 읽기 · ${chName(next.b,next.c)} ›</button>`:''}`;
+    ${next?`<button class="btn primary block ${rd?'':'hidden'}" id="goNext" data-go="#read/${next.b}/${next.c}">다음 장 읽기 · ${chName(next.b,next.c)} ›</button>`:''}
+    ${data?'<p class="read-hint">구절을 누르면 즐겨찾기·메모를 남길 수 있습니다</p>':''}`;
   return h;
+}
+
+/* ───────── 구절 선택 · 즐겨찾기 ───────── */
+let CUR=null, SEL=null;   // SEL = {s,e}
+const refTxt = x => `${BOOKS[x.b][0]} ${x.c}:${x.v1}${x.v2>x.v1?'-'+x.v2:''}`;
+function findBm(b,c,s,e){ return BM.find(x=>x.b===b&&x.c===c&&x.v1===s&&x.v2===e); }
+function paintSel(){
+  document.querySelectorAll('.reader p[data-v]').forEach(p=>{ const v=+p.dataset.v; p.classList.toggle('sel', !!SEL && v>=SEL.s && v<=SEL.e); });
+  const bar=$('#selbar');
+  document.body.classList.toggle('has-sel', !!SEL);
+  if(!SEL){ bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  $('#selRef').textContent = refTxt({b:CUR.b,c:CUR.c,v1:SEL.s,v2:SEL.e});
+  $('#selSave').textContent = findBm(CUR.b,CUR.c,SEL.s,SEL.e) ? '★ 수정' : '★ 즐겨찾기';
+}
+function tapVerse(v){
+  if(!SEL){
+    const hit=BM.find(x=>x.b===CUR.b&&x.c===CUR.c&&v>=x.v1&&v<=x.v2);
+    SEL = hit ? {s:hit.v1,e:hit.v2} : {s:v,e:v};
+  }else if(v<SEL.s) SEL.s=v;
+  else if(v>SEL.e) SEL.e=v;
+  else if(SEL.s===SEL.e) SEL=null;
+  else if(v===SEL.s) SEL.s++;
+  else if(v===SEL.e) SEL.e--;
+  else SEL={s:v,e:v};
+  paintSel();
+}
+function selVerses(){ return CUR.data.v.filter(([n])=>n>=SEL.s&&n<=SEL.e); }
+function plainText(ref, verses){
+  const multi=verses.length>1;
+  return ref+'\n'+verses.map(([n,t])=>multi?`${n} ${t}`:t).join(multi?'\n':'');
+}
+function quoteHtml(verses){
+  const multi=verses.length>1;
+  return verses.map(([n,t])=>`${multi?`<sup>${n}</sup>`:''}${esc(t)}`).join(' ');
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;opacity:0;top:0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e2){} ta.remove(); }
+  toast('복사했습니다');
+}
+const catName = id => (CATS.find(c=>c.id===id)||{}).name;
+const catCount = id => BM.filter(x=>(x.cats||[]).includes(id)).length;
+
+/* 즐겨찾기 편집 창 */
+function editBookmark(bm){
+  return new Promise(res=>{
+    const isNew=!BM.includes(bm), picked=new Set(bm.cats||[]);
+    const m=document.createElement('div'); m.className='modal top';
+    const chips=()=>CATS.map(c=>`<button type="button" class="chip ${picked.has(c.id)?'on':''}" data-cat="${c.id}">${esc(c.name)}</button>`).join('')
+      +`<button type="button" class="chip add" data-addcat>+ 새 카테고리</button>`;
+    m.innerHTML=`<div class="box"><h3>${esc(refTxt(bm))}</h3><div class="quote">${quoteHtml(bm.text)}</div>
+      <div class="field"><label>카테고리 <span style="font-weight:400">(여러 개 선택 가능)</span></label><div class="chips" id="eChips">${chips()}</div>
+        <div class="row hidden" id="eNew" style="margin-top:8px"><input class="inp" id="eNewIn" placeholder="예: 새벽기도, 병문안, 결혼" enterkeyhint="done"><button type="button" class="btn" data-newcat>추가</button></div></div>
+      <div class="field"><label>메모</label><textarea id="eMemo" placeholder="묵상한 내용, 적용할 점, 기억할 상황">${esc(bm.memo||'')}</textarea></div>
+      <div class="field"><label>관련 찬양 <span style="font-weight:400">(한 줄에 한 곡)</span></label><textarea id="eSongs" placeholder="예: 새찬송가 ○○장&#10;곡 제목">${esc((bm.songs||[]).join('\n'))}</textarea></div>
+      <div class="acts">${isNew?'':'<button type="button" class="btn warn" data-x="del">삭제</button>'}<button type="button" class="btn" data-x="cancel">취소</button><button type="button" class="btn primary" data-x="save">저장</button></div></div>`;
+    const addCat=()=>{ const inp=m.querySelector('#eNewIn'), name=inp.value.trim(); if(!name) return;
+      let c=CATS.find(x=>x.name===name); if(!c){ c={id:uid(),name}; CATS.push(c); }
+      picked.add(c.id); inp.value=''; m.querySelector('#eChips').innerHTML=chips(); };
+    m.querySelector('#eNewIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addCat(); } });
+    m.addEventListener('click', async e=>{
+      const c=e.target.closest('[data-cat]'); if(c){ const id=c.dataset.cat; picked.has(id)?picked.delete(id):picked.add(id); c.classList.toggle('on'); return; }
+      if(e.target.closest('[data-addcat]')){ m.querySelector('#eNew').classList.remove('hidden'); m.querySelector('#eNewIn').focus(); return; }
+      if(e.target.closest('[data-newcat]')){ addCat(); return; }
+      const x=e.target.closest('[data-x]'); if(!x) return;
+      const act=x.dataset.x;
+      if(act==='cancel'){ m.remove(); await save('cats'); return res(null); }
+      if(act==='del'){ if(!await confirmBox('즐겨찾기 삭제', `<p>${esc(refTxt(bm))} 즐겨찾기와 메모를 지웁니다.</p>`,'삭제',true)) return;
+        BM.splice(BM.indexOf(bm),1); await save('bookmarks','cats'); m.remove(); toast('삭제했습니다'); return res('del'); }
+      if(act==='save'){
+        bm.cats=[...picked].filter(id=>CATS.some(c=>c.id===id));
+        bm.memo=m.querySelector('#eMemo').value.trim();
+        bm.songs=m.querySelector('#eSongs').value.split('\n').map(s=>s.trim()).filter(Boolean);
+        bm.updated=Date.now(); if(isNew){ bm.created=bm.updated; BM.push(bm); }
+        await save('bookmarks','cats'); m.remove(); toast(isNew?'즐겨찾기에 저장했습니다':'수정했습니다'); return res('save');
+      }
+    });
+    document.body.appendChild(m);
+  });
+}
+async function saveSelection(){
+  if(!SEL||!CUR||!CUR.data) return;
+  const {b,c}=CUR;
+  let bm=findBm(b,c,SEL.s,SEL.e);
+  if(!bm) bm={id:uid(), b, c, v1:SEL.s, v2:SEL.e, text:selVerses(), cats:[], memo:'', songs:[]};
+  const r=await editBookmark(bm);
+  if(r){ SEL=null; rerender(); }
+}
+
+/* 카테고리 관리 */
+function manageCats(){
+  return new Promise(res=>{
+    const m=document.createElement('div'); m.className='modal top';
+    const rows=()=>CATS.map((c,i)=>`<div class="cat-row" data-i="${i}"><input class="inp" value="${esc(c.name)}" data-name="${i}"><span class="n">${catCount(c.id)}</span>
+        <button type="button" data-up="${i}" ${i===0?'disabled':''} aria-label="위로">↑</button><button type="button" data-down="${i}" ${i===CATS.length-1?'disabled':''} aria-label="아래로">↓</button><button type="button" data-del="${i}" aria-label="삭제">✕</button></div>`).join('')||'<p class="small muted">카테고리가 없습니다.</p>';
+    m.innerHTML=`<div class="box"><h3>카테고리 관리</h3><p class="small muted" style="margin:0 0 12px">이름을 고치거나 순서를 바꿀 수 있습니다. 숫자는 들어 있는 구절 수입니다.</p>
+      <div id="cRows">${rows()}</div>
+      <div class="row" style="margin-top:4px"><input class="inp" id="cNew" placeholder="새 카테고리 이름" enterkeyhint="done"><button type="button" class="btn" data-add>추가</button></div>
+      <div class="acts"><button type="button" class="btn primary" data-done>완료</button></div></div>`;
+    const sync=()=>m.querySelectorAll('[data-name]').forEach(inp=>{ const v=inp.value.trim(); if(v) CATS[+inp.dataset.name].name=v; });
+    const redraw=()=>{ m.querySelector('#cRows').innerHTML=rows(); };
+    const add=()=>{ const inp=m.querySelector('#cNew'), v=inp.value.trim(); if(!v) return; sync(); if(!CATS.some(c=>c.name===v)) CATS.push({id:uid(),name:v}); inp.value=''; redraw(); };
+    m.querySelector('#cNew').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); add(); } });
+    m.addEventListener('click', async e=>{
+      const t=e.target.closest('button'); if(!t) return;
+      if(t.dataset.up!==undefined){ sync(); const i=+t.dataset.up; [CATS[i-1],CATS[i]]=[CATS[i],CATS[i-1]]; redraw(); }
+      else if(t.dataset.down!==undefined){ sync(); const i=+t.dataset.down; [CATS[i+1],CATS[i]]=[CATS[i],CATS[i+1]]; redraw(); }
+      else if(t.dataset.del!==undefined){ sync(); const i=+t.dataset.del, c=CATS[i], n=catCount(c.id);
+        if(n && !await confirmBox('카테고리 삭제', `<p>'${esc(c.name)}' 카테고리를 지웁니다.</p><p class="small muted">들어 있던 구절 ${n}개는 지워지지 않고, 이 카테고리 표시만 빠집니다.</p>`,'삭제',true)) return;
+        CATS.splice(i,1); BM.forEach(x=>{ if(x.cats) x.cats=x.cats.filter(id=>id!==c.id); }); if(bmFilter===c.id) bmFilter='all'; redraw(); }
+      else if(t.dataset.add!==undefined) add();
+      else if(t.dataset.done!==undefined){ sync(); await save('cats','bookmarks'); m.remove(); res(); }
+    });
+    document.body.appendChild(m);
+  });
 }
 function markUI(on){
   const btn=document.querySelector('.mark-btn'); if(btn){ btn.classList.toggle('on',on); btn.textContent= on?'✓ 읽음 (다시 누르면 취소)':'이 장 읽음'; }
@@ -559,6 +741,35 @@ function viewStats(){
   return h;
 }
 
+/* ───────── 화면: 즐겨찾기 ───────── */
+let bmFilter='all', bmSort='bible', bmQuery='';
+function bmList(){
+  let list=BM.slice();
+  if(bmFilter==='none') list=list.filter(x=>!(x.cats||[]).length);
+  else if(bmFilter!=='all') list=list.filter(x=>(x.cats||[]).includes(bmFilter));
+  const q=norm(bmQuery).toLowerCase();
+  if(q) list=list.filter(x=>norm(refTxt(x)+x.text.map(v=>v[1]).join('')+(x.memo||'')+(x.songs||[]).join('')+(x.cats||[]).map(catName).join('')).toLowerCase().includes(q));
+  list.sort(bmSort==='recent' ? (a,b)=>(b.updated||0)-(a.updated||0) : (a,b)=>a.b-b.b||a.c-b.c||a.v1-b.v1);
+  if(!BM.length) return `<div class="empty muted"><p>아직 즐겨찾기한 구절이 없습니다.</p><p class="small">성경을 읽다가 구절을 누르고<br>'★ 즐겨찾기'를 눌러 저장하세요.</p></div>`;
+  if(!list.length) return `<div class="empty muted"><p>조건에 맞는 구절이 없습니다.</p></div>`;
+  return `<p class="small muted" style="margin:6px 2px 8px">${list.length}개</p>`+list.map(x=>`<div class="bm-card">
+      <button class="bm-ref" data-go="#read/${x.b}/${x.c}" data-v="${x.v1}">${esc(refTxt(x))} ›</button>
+      <div class="bm-text">${quoteHtml(x.text)}</div>
+      ${x.memo?`<div class="bm-memo">${esc(x.memo)}</div>`:''}
+      ${(x.songs||[]).length?`<div class="bm-songs">${x.songs.map(s=>`<div>${esc(s)}</div>`).join('')}</div>`:''}
+      ${(x.cats||[]).length?`<div class="tags">${x.cats.map(id=>catName(id)).filter(Boolean).map(n=>`<span class="tag">${esc(n)}</span>`).join('')}</div>`:''}
+      <div class="bm-acts"><button class="btn" data-copybm="${x.id}">복사</button><button class="btn" data-editbm="${x.id}">편집</button></div></div>`).join('');
+}
+function viewBookmarks(){
+  setHeader('즐겨찾기', null, `<button class="btn" style="padding:7px 12px;font-size:13px" data-act="cats">카테고리 관리</button>`);
+  const none=BM.filter(x=>!(x.cats||[]).length).length;
+  const chip=(id,label,n)=>`<button class="chip ${bmFilter===id?'on':''}" data-filter="${id}">${esc(label)}<span class="n">${n}</span></button>`;
+  return `<input class="inp" id="bmQ" type="search" placeholder="구절·메모·찬양 검색" value="${esc(bmQuery)}" autocomplete="off">
+    <div class="filter">${chip('all','전체',BM.length)}${CATS.map(c=>chip(c.id,c.name,catCount(c.id))).join('')}${none?chip('none','미분류',none):''}</div>
+    <div class="row between"><span></span><div class="seg" style="width:170px"><button class="${bmSort==='bible'?'on':''}" data-sort="bible">성경 순</button><button class="${bmSort==='recent'?'on':''}" data-sort="recent">최근 순</button></div></div>
+    <div id="bmList">${bmList()}</div>`;
+}
+
 /* ───────── 화면: 설정 ───────── */
 function viewSettings(){
   setHeader('설정');
@@ -594,16 +805,19 @@ function route(){
   return {v:p[0]||'home', a:+p[1], b:+p[2]};
 }
 async function render(){
+  if(!P) return;   // 저장소를 다 읽기 전에는 그리지 않음
   const r=route(); let html='';
   if(r.v!=='read' && readerObs){ readerObs.disconnect(); readerObs=null; }
+  SEL=null; $('#selbar').classList.add('hidden'); document.body.classList.remove('has-sel');
   if(r.v==='books') html=viewBooks();
+  else if(r.v==='bookmarks') html=viewBookmarks();
   else if(r.v==='book' && BOOKS[r.a]) html=viewBook(r.a);
   else if(r.v==='read' && BOOKS[r.a] && r.b>=1 && r.b<=BOOKS[r.a][2]) html=await viewRead(r.a,r.b);
   else if(r.v==='stats') html=viewStats();
   else if(r.v==='settings') html=viewSettings();
   else html=viewHome();
   $('#main').innerHTML=html;
-  const tab = {home:'#home',books:'#books',book:'#books',read:'#books',stats:'#stats',settings:'#settings'}[r.v]||'#home';
+  const tab = {home:'#home',books:'#books',book:'#books',read:'#books',bookmarks:'#bookmarks',stats:'#stats',settings:'#settings'}[r.v]||'#home';
   document.querySelectorAll('.tabs button').forEach(t=>t.classList.toggle('on', t.dataset.go===tab));
   if(r.v==='read') afterRead(r.a,r.b); else if(!keepScroll) window.scrollTo(0,0);
   keepScroll=false;
@@ -614,13 +828,27 @@ function rerender(){ keepScroll=true; const y=scrollY; render().then(()=>window.
 /* ───────── 이벤트 ───────── */
 document.addEventListener('click', async e=>{
   const go=e.target.closest('[data-go]');
-  if(go){ e.preventDefault(); if(location.hash===go.dataset.go) render(); else location.hash=go.dataset.go; return; }
+  if(go){ e.preventDefault(); if(go.dataset.v) pendingVerse=+go.dataset.v; if(location.hash===go.dataset.go) render(); else location.hash=go.dataset.go; return; }
+  const vp=e.target.closest('.reader p[data-v]');
+  if(vp && CUR && CUR.data){ if(getSelection && String(getSelection()).length) return; tapVerse(+vp.dataset.v); return; }
+  const fl=e.target.closest('[data-filter]');
+  if(fl){ bmFilter=fl.dataset.filter; rerender(); return; }
+  const so=e.target.closest('[data-sort]');
+  if(so){ bmSort=so.dataset.sort; rerender(); return; }
+  const eb=e.target.closest('[data-editbm]');
+  if(eb){ const bm=BM.find(x=>x.id===eb.dataset.editbm); if(bm && await editBookmark(bm)) rerender(); return; }
+  const cb=e.target.closest('[data-copybm]');
+  if(cb){ const bm=BM.find(x=>x.id===cb.dataset.copybm); if(bm) copyText(plainText(refTxt(bm), bm.text)); return; }
   const ch=e.target.closest('[data-ch]');
   if(ch){ const b=route().a, c=+ch.dataset.ch;
     if(checkMode){ await setRead(b,c,!isRead(b,c),{silent:true}); rerender(); } else location.hash=`#read/${b}/${c}`; return; }
   const el=e.target.closest('[data-act]'); if(!el || el.tagName==='FORM') return;
   const act=el.dataset.act, r=route();
-  if(act==='import') $('#fileText').click();
+  if(act==='selcopy'){ if(SEL) copyText(plainText(refTxt({b:CUR.b,c:CUR.c,v1:SEL.s,v2:SEL.e}), selVerses())); }
+  else if(act==='selsave') saveSelection();
+  else if(act==='selclear'){ SEL=null; paintSel(); }
+  else if(act==='cats'){ await manageCats(); rerender(); }
+  else if(act==='import') $('#fileText').click();
   else if(act==='backup') exportBackup();
   else if(act==='restore') $('#fileBackup').click();
   else if(act==='mode'){ checkMode = el.dataset.v==='1'; rerender(); }
@@ -641,6 +869,7 @@ document.addEventListener('submit', e=>{
   pendingVerse=j.v; location.hash=`#read/${j.b}/${j.c}`;
 });
 document.addEventListener('input', async e=>{
+  if(e.target.id==='bmQ'){ bmQuery=e.target.value; $('#bmList').innerHTML=bmList(); return; }
   const k=e.target.dataset.set; if(k){ S[k]=+e.target.value; $('#'+k+'V').textContent=S[k];
     const pv=$('#preview'); pv.style.fontSize=S.font+'px'; pv.style.lineHeight=S.lh; save('settings'); }
 });
